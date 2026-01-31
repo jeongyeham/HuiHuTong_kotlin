@@ -61,7 +61,7 @@ class HuiHuTongViewModel : ViewModel() {
                 .url("https://api.215123.cn/web-app/auth/certificateLogin?openId=${openID.value}")
                 .build()
             val response = client.newCall(request).execute()
-            val tmpData = response.body()?.string().orEmpty()
+            val tmpData = response.body?.string().orEmpty()
 
             val json = JSONObject(tmpData).optJSONObject("data")
                 ?: throw JSONException("'data' is null")
@@ -90,7 +90,7 @@ class HuiHuTongViewModel : ViewModel() {
                     .addHeader("satoken", saToken)
                     .build()
                 val response = client.newCall(request).execute()
-                val body = response.body()?.string().orEmpty()
+                val body = response.body?.string().orEmpty()
 
                 val data = JSONObject(body).optString("data", "")
                 if (!data.isNullOrEmpty() && data != "null") {

@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -92,53 +94,61 @@ fun MainView(viewModel: HuiHuTongViewModel, onSettingButton: () -> Unit, prefs: 
 
     Scaffold(
         topBar = { TopBar(onSettingButton) },
-        bottomBar = {
-            BottomBar(selectedItem){ route ->
-                navController.navigate(route)
-            }
-        }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination =
-                if (viewModel.openID.value == "" )
-                    { MainTab.HOME.route }
-                else { MainTab.QR_CODE.route },
-            enterTransition = {
-                slideInHorizontally(tween(300)) +
-                        fadeIn(tween(300))
-            },
-            exitTransition = {
-                slideOutHorizontally(tween(300)) +
-                        fadeOut(tween(300))
-            },
-            modifier = Modifier
-                .padding(innerPadding)
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination =
+                    if (viewModel.openID.value == "" )
+                        { MainTab.HOME.route }
+                    else { MainTab.QR_CODE.route },
+                enterTransition = {
+                    slideInHorizontally(tween(300)) +
+                            fadeIn(tween(300))
+                },
+                exitTransition = {
+                    slideOutHorizontally(tween(300)) +
+                            fadeOut(tween(300))
+                },
+                modifier = Modifier
+                    .padding(innerPadding)
 
-        ) {
-            composable(MainTab.HOME.route) {
-                selectedItem = MainTab.HOME.route
-                HomeView(
-                    viewModel.latestRelease,
-                    viewModel.openID
-                ) {
-                    viewModel.setOpenID(it, prefs)
-                    navController.navigate(MainTab.QR_CODE.route)
+            ) {
+                composable(MainTab.HOME.route) {
+                    selectedItem = MainTab.HOME.route
+                    HomeView(
+                        viewModel.latestRelease,
+                        viewModel.openID
+                    ) {
+                        viewModel.setOpenID(it, prefs)
+                        navController.navigate(MainTab.QR_CODE.route)
+                    }
+                }
+                composable(MainTab.QR_CODE.route) {
+                    selectedItem = MainTab.QR_CODE.route
+                    QRCodeView(
+                        LocalContext.current,
+                        viewModel.latestRelease,
+                        viewModel.isLoading,
+                        viewModel.qrCodeInfo,
+                        viewModel.openID,
+                        { viewModel.getSaToken() },
+                        { viewModel.fetchQRCode(it) },
+                        { navController.popBackStack() }
+                    )
                 }
             }
-            composable(MainTab.QR_CODE.route) {
-                selectedItem = MainTab.QR_CODE.route
-                QRCodeView(
-                    LocalContext.current,
-                    viewModel.latestRelease,
-                    viewModel.isLoading,
-                    viewModel.qrCodeInfo,
-                    viewModel.openID,
-                    { viewModel.getSaToken() },
-                    { viewModel.fetchQRCode(it) },
-                    { navController.popBackStack() }
-                )
-            }
+            
+            // 悬浮式底部导航栏
+            BottomBar(
+                currentRoute = selectedItem,
+                onClick = { route ->
+                    navController.navigate(route)
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 56.dp)
+            )
         }
     }
 }
@@ -332,19 +342,64 @@ private fun QRCodeViewContent(
 @Composable
 private fun BottomBar(
     currentRoute: String,
-    onClick: (String) -> Unit
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    BottomAppBar {
-        val tabs = MainTab.getAllTabs()
-        tabs.forEach { item ->
-            NavigationBarItem(
-                icon = { Icon(item.icon, contentDescription = stringResource(item.labelId)) },
-                label = { Text(stringResource(item.labelId)) },
-                selected = currentRoute == item.route,
-                onClick = {
-                    onClick(item.route)
+    Row(
+        modifier = modifier
+            .padding(horizontal = 8.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            shadowElevation = 3.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val tabs = MainTab.getAllTabs()
+                tabs.forEach { item ->
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                    ) {
+                        // 选中状态的边框
+                        if (currentRoute == item.route) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .padding(4.dp)
+                                    .border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = MaterialTheme.shapes.extraLarge
+                                    )
+                            )
+                        }
+                        
+                        IconButton(
+                            onClick = { onClick(item.route) },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                item.icon,
+                                contentDescription = stringResource(item.labelId),
+                                tint = if (currentRoute == item.route)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
-            )
+            }
         }
     }
 }

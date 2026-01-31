@@ -24,10 +24,10 @@ suspend fun fetchLatestRelease():GithubRelease? =
         try{
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Log.e("GitHubRelease", "Failed response: ${response.code()}")
+                    Log.e("GitHubRelease", "Failed response: ${response.code}")
                     return@withContext null
                 }
-                val jsonString = response.body()?.string() ?: return@withContext null
+                val jsonString = response.body?.string() ?: return@withContext null
                 return@withContext try {
                     val json = JSONObject(jsonString)
                     val tagName = json.getString("tag_name")
